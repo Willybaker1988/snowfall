@@ -1,0 +1,52 @@
+steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.7.5'
+      inputs:
+        versionSpec: 3.7.5
+    
+steps:
+    - bash: |
+        pip freeze > requirements.txt
+        echo '########## Python Version ###########'
+        python -V
+        echo '########## 1 Install the latest pip ###########'
+        sudo pip3 install -U pip
+        echo '######## 2  Install setup tools  #######'
+        sudo apt-get install python3-setuptools
+        echo '######## 3 Remove CFFI ########'
+        sudo apt-get remove python3-cffi
+        echo '######## 4 Upgrade CFFI  ########'
+        sudo pip3 install --upgrade cffi
+        echo '######## 6 Install Python Library  ########'
+        sudo apt-get install git libpq-dev python3-dev 
+        echo '######## 7 install cryptography==2.8  ########'
+        sudo pip3 install cryptography==2.8
+        echo ''######## 8 install dbt  ########'
+        sudo pip install dbt==0.14.4
+        echo '######## 9 validate dbt installation ########'
+        dbt --version
+        cat requirements.txt
+
+displayName: 'DOWNLOAD_INSTALL_DBT'
+
+variables:
+    ENV_SNOWSQL_ACCOUNT: 'template'
+    ENV_SNOWSQL_USER: 'template'
+    ENV_DBT_PASSWORD: 'template'
+    ENV_SNOWSQL_ROLE: 'template'
+    ENV_SNOWSQL_DATABASE: 'template'
+    ENV_SNOWSQL_WAREHOUSE: 'template'
+    
+    steps:
+    - bash: |
+        export SNOWSQL_ACCOUNT=$(ENV_SNOWSQL_ACCOUNT)
+        export SNOWSQL_USER=$(ENV_SNOWSQL_USER)
+        export DBT_PASSWORD=$(ENV_DBT_PASSWORD)
+        export SNOWSQL_ROLE=$(ENV_SNOWSQL_ROLE)
+        export SNOWSQL_DATABASE=$(ENV_SNOWSQL_DATABASE)
+        export SNOWSQL_WAREHOUSE=$(ENV_SNOWSQL_WAREHOUSE)
+        export DBT_PROFILES_DIR=./
+        chmod 750 ./deploy_persistent_models.sh
+        ./deploy_persistent_models.sh
+    workingDirectory: '$(System.DefaultWorkingDirectory)/_dbt_deployments/drop'
+    displayName: 'DBT_RUN'
